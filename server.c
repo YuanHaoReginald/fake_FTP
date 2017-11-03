@@ -397,7 +397,6 @@ void handle_client(int connfd) {
             int transfer_fd;
             if(flag_pasv_or_port_mode == 1) {
                 send_command(connfd, "150 Opening BINARY mode data connection.\r\n");
-                sleep(1);
 
                 if((transfer_fd = accept(pasv_fd, NULL, NULL)) == -1) {
                     printf("Error accept(): %s(%d)\n", strerror(errno), errno);
@@ -406,7 +405,6 @@ void handle_client(int connfd) {
                 }
             } else if (flag_pasv_or_port_mode == 2) {
                 send_command(connfd, "150 Opening BINARY mode data connection.\r\n");
-                sleep(1);
 
                 char client_ip[8192];
                 int client_port;
@@ -425,18 +423,32 @@ void handle_client(int connfd) {
             sprintf(dir_buffer, "ls -l %s", parameter);
             FILE *fp;
             if ((fp = popen(dir_buffer, "r")) == NULL) {
-                send_command(connfd, "550 RMD fail!\r\n");
+                send_command(connfd, "550 LIST fail!\r\n");
                 goto list_outer_continue;
             }
             char list_buffer[8192];
-            while (fgets(list_buffer, 8191, fp) != NULL) {
-                char list_command[8192];
-                remove_space(list_command);
-                sprintf(list_buffer, "125 %s\r\n", list_command);
-                send_command(connfd, list_buffer);
+            size_t n;
+            while (1){
+                n = fread(list_buffer, 1, 8190, fp);
+                printf("%s", list_buffer);
+                if(send(transfer_fd, list_buffer, n, 0) < 0) {
+                    printf("Error send() in LIST\n");
+                    send_command(connfd, "426 LIST send error!\r\n");
+                    pclose(fp);
+                    goto list_outer_continue;
+                }
+                if(n <= 0)
+                    break;
             }
+//            while (fgets(list_buffer, 8191, fp) != NULL) {
+//                char list_command[8192];
+//                remove_space(list_command);
+//                sprintf(list_buffer, "125 %s\r\n", list_command);
+//                send_command(connfd, list_buffer);
+//            }
             pclose(fp);
             send_command(connfd, "226 LIST success!\r\n");
+            close(transfer_fd);
 
             list_outer_continue:
             if(pasv_fd != 0){

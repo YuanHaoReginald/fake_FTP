@@ -208,7 +208,7 @@ int recv_file(int connfd, char* filename) {
 
     while (1) {
         if((n = recv(connfd, buf, 8190, 0)) < 0) {
-            printf("Error send(), filename: %s\n", filename);
+            printf("Error recv(), filename: %s\n", filename);
             fclose(f);
             return 2;
         }
