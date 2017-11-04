@@ -182,39 +182,18 @@ void handle_client(int connfd) {
                 printf("User '%s' log in!\n", username);
             } else {
                 flag_has_username = 0;
-                send_command(connfd, "501 Authentication failed.\r\n");
+                send_command(connfd, "530 Authentication failed.\r\n");
             }
         } else if(strcmp(command, "RETR") == 0) {
-            if(flag_has_log == 0) {
-                send_command(connfd, "530 You should log in!\r\n");
-                goto retr_outer_continue;
-            }
-            if(parse_index(parameter, &height, 0) == 1) {
-                send_command(connfd, "550 You don't have enough right!\r\n");
-                goto retr_outer_continue;
-            }
-            if(access(parameter, 0) == -1) {
-                send_command(connfd, "550 The file not exist!\r\n");
-                goto retr_outer_continue;
-            }
-            if(access(parameter, 4) == -1) {
-                send_command(connfd, "550 The file can not read!\r\n");
-                goto retr_outer_continue;
-            }
             int transfer_fd;
             if(flag_pasv_or_port_mode == 1) {
-                send_command(connfd, "150 Opening BINARY mode data connection.\r\n");
-                sleep(1);
-
                 if((transfer_fd = accept(pasv_fd, NULL, NULL)) == -1) {
                     printf("Error accept(): %s(%d)\n", strerror(errno), errno);
                     send_command(connfd, "425 Can not set a socket.\r\n");
                     goto retr_outer_continue;
                 }
-            } else if (flag_pasv_or_port_mode == 2) {
                 send_command(connfd, "150 Opening BINARY mode data connection.\r\n");
-                sleep(1);
-
+            } else if (flag_pasv_or_port_mode == 2) {
                 char client_ip[8192];
                 int client_port;
                 parse_ip_and_port(port_parameter, &client_port, client_ip, 1);
@@ -223,15 +202,41 @@ void handle_client(int connfd) {
                     send_command(connfd, "425 Can not set a socket.\r\n");
                     goto retr_outer_continue;
                 }
+                send_command(connfd, "150 Opening BINARY mode data connection.\r\n");
             } else {
                 send_command(connfd, "425 PASV or PORT may not be set before.\r\n");
                 goto retr_outer_continue;
             }
+            if(flag_has_log == 0) {
+                send_command(connfd, "530 You should log in!\r\n");
+                close(transfer_fd);
+                goto retr_outer_continue;
+            }
+            if(parse_index(parameter, &height, 0) == 1) {
+                send_command(connfd, "550 You don't have enough right!\r\n");
+                close(transfer_fd);
+                goto retr_outer_continue;
+            }
+            if(access(parameter, 0) == -1) {
+                send_command(connfd, "550 The file not exist!\r\n");
+                close(transfer_fd);
+                goto retr_outer_continue;
+            }
+            if(access(parameter, 4) == -1) {
+                send_command(connfd, "550 The file can not read!\r\n");
+                close(transfer_fd);
+                goto retr_outer_continue;
+            }
+
             int send_file_status = send_file(transfer_fd, parameter);
             if(send_file_status == 1) {
                 send_command(connfd, "550 Read file fail!\r\n");
+                close(transfer_fd);
+                goto retr_outer_continue;
             } else if (send_file_status == 2) {
                 send_command(connfd, "426 Send file error!\r\n");
+                close(transfer_fd);
+                goto retr_outer_continue;
             }
             send_command(connfd, "226 Transfer successful.\r\n");
             close(transfer_fd);
@@ -243,28 +248,15 @@ void handle_client(int connfd) {
             }
             flag_pasv_or_port_mode = 0;
         } else if(strcmp(command, "STOR") == 0) {
-            if(flag_has_log == 0) {
-                send_command(connfd, "530 You should log in!\r\n");
-                goto stor_outer_continue;
-            }
-            if(access(parameter, 0) != -1) {
-                send_command(connfd, "550 The file is exist!\r\n");
-                goto stor_outer_continue;
-            }
             int transfer_fd;
             if(flag_pasv_or_port_mode == 1) {
-                send_command(connfd, "150 Opening BINARY mode data connection.\r\n");
-                sleep(1);
-
                 if((transfer_fd = accept(pasv_fd, NULL, NULL)) == -1) {
                     printf("Error accept(): %s(%d)\n", strerror(errno), errno);
                     send_command(connfd, "425 Can not set a socket.\r\n");
                     goto stor_outer_continue;
                 }
-            } else if (flag_pasv_or_port_mode == 2) {
                 send_command(connfd, "150 Opening BINARY mode data connection.\r\n");
-                sleep(1);
-
+            } else if (flag_pasv_or_port_mode == 2) {
                 char client_ip[8192];
                 int client_port;
                 parse_ip_and_port(port_parameter, &client_port, client_ip, 1);
@@ -273,15 +265,30 @@ void handle_client(int connfd) {
                     send_command(connfd, "425 Can not set a socket.\r\n");
                     goto stor_outer_continue;
                 }
+                send_command(connfd, "150 Opening BINARY mode data connection.\r\n");
             } else {
                 send_command(connfd, "425 PASV or PORT may not be set before.\r\n");
+                goto stor_outer_continue;
+            }
+            if(flag_has_log == 0) {
+                send_command(connfd, "530 You should log in!\r\n");
+                close(transfer_fd);
+                goto stor_outer_continue;
+            }
+            if(access(parameter, 0) != -1) {
+                send_command(connfd, "550 The file is exist!\r\n");
+                close(transfer_fd);
                 goto stor_outer_continue;
             }
             int recv_file_status = recv_file(transfer_fd, parameter);
             if(recv_file_status == 1) {
                 send_command(connfd, "550 Open file fail!\r\n");
+                close(transfer_fd);
+                goto stor_outer_continue;
             } else if (recv_file_status == 2) {
                 send_command(connfd, "426 Recv file error!\r\n");
+                close(transfer_fd);
+                goto stor_outer_continue;
             }
             send_command(connfd, "226 Transfer successful.\r\n");
             close(transfer_fd);

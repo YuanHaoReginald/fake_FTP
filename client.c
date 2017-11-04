@@ -125,17 +125,20 @@ int main() {
                     continue;
                 }
 
-                sprintf(list_command_buffer, "LIST %s\t\n", parameter);
-                if(get_response(connectfd, list_command_buffer, response_buffer, 8191) == -1) {
-                    continue;
-                }
-                if(check_response(response_buffer, "150") == 0){
-                    printf("%s\n", response_buffer);
-                    continue;
-                }
+                sprintf(list_command_buffer, "LIST %s\r\n", parameter);
+                if(strlen(list_command_buffer))
+                    if(send_command(connectfd, list_command_buffer) == -1)
+                        return -1;
                 if((transfer_fd = accept(pasv_fd, NULL, NULL)) == -1) {
                     printf("Error accept(): %s(%d)\n", strerror(errno), errno);
                     close(pasv_fd);
+                    return 1;
+                }
+                if(recv_command(connectfd, response_buffer, 8191) == -1)
+                    return -1;
+                remove_space(response_buffer);
+                if(check_response(response_buffer, "150") == 0){
+                    printf("%s\n", response_buffer);
                     continue;
                 }
             } else {
@@ -143,20 +146,35 @@ int main() {
                     continue;
                 }
 
-                sprintf(list_command_buffer, "LIST %s\t\n", parameter);
-                if(get_response(connectfd, list_command_buffer, response_buffer, 8191) == -1) {
-                    continue;
-                }
+                sprintf(list_command_buffer, "LIST %s\r\n", parameter);
+                if(strlen(list_command_buffer))
+                    if(send_command(connectfd, list_command_buffer) == -1)
+                        return -1;
+                socket_connect_client(&transfer_fd, port, ip);
+                if(recv_command(connectfd, response_buffer, 8191) == -1)
+                    return -1;
+                remove_space(response_buffer);
                 if(check_response(response_buffer, "150") == 0){
                     printf("%s\n", response_buffer);
-                    continue;
-                }
-                if(socket_connect_client(&transfer_fd, port, ip) != 0) {
                     continue;
                 }
             }
             char list_buffer[8192];
             ssize_t n;
+
+//            while (1) {
+//                printf("1\n");
+//                n = read(transfer_fd, list_buffer, 8191);
+//                if (n == -1) {
+//                    printf("read error\n");
+//                    break;
+//                }
+//                else if (n == 0) {
+//                    printf("finish reading\r\n");
+//                    break;
+//                }
+//                fwrite(list_buffer, n, 1, stderr);
+//            }
             while (1) {
                 if((n = recv(transfer_fd, list_buffer, 8190, 0)) < 0) {
                     printf("Error recv(), in LIST\n");
@@ -268,7 +286,7 @@ int login(int connfd){
                 return 1;
             }
             printf("%s\n", response_buffer);
-            if(check_response(response_buffer, "501")) {
+            if(check_response(response_buffer, "530")) {
                 goto login_continue;
             } else if (check_response(response_buffer, "230")) {
                 return 0;
@@ -320,14 +338,15 @@ int transfer_file_pasv(int connfd, char *filename, int flag_retr_or_stor){ //fla
     }
 
     sprintf(command_buffer, (flag_retr_or_stor == 0? "RETR %s\r\n": "STOR %s\r\n"), filename);
-    if(get_response(connfd, command_buffer, response_buffer, 8191) == -1) {
-        return 1;
-    }
+    if(strlen(command_buffer))
+        if(send_command(connfd, command_buffer) == -1)
+            return -1;
+    socket_connect_client(&transfer_fd, port, ip);
+    if(recv_command(connfd, response_buffer, 8191) == -1)
+        return -1;
+    remove_space(response_buffer);
     if(check_response(response_buffer, "150") == 0){
         printf("%s\n", response_buffer);
-        return 1;
-    }
-    if(socket_connect_client(&transfer_fd, port, ip) != 0) {
         return 1;
     }
 
@@ -348,16 +367,19 @@ int transfer_file_port(int connfd, char *filename, int flag_retr_or_stor){ //fla
     }
 
     sprintf(command_buffer, (flag_retr_or_stor == 0? "RETR %s\r\n": "STOR %s\r\n"), filename);
-    if(get_response(connfd, command_buffer, response_buffer, 8191) == -1) {
-        return 1;
-    }
-    if(check_response(response_buffer, "150") == 0){
-        printf("%s\n", response_buffer);
-        return 1;
-    }
+    if(strlen(command_buffer))
+        if(send_command(connfd, command_buffer) == -1)
+            return -1;
     if((transfer_fd = accept(pasv_fd, NULL, NULL)) == -1) {
         printf("Error accept(): %s(%d)\n", strerror(errno), errno);
         close(pasv_fd);
+        return 1;
+    }
+    if(recv_command(connfd, response_buffer, 8191) == -1)
+        return -1;
+    remove_space(response_buffer);
+    if(check_response(response_buffer, "150") == 0){
+        printf("%s\n", response_buffer);
         return 1;
     }
 
