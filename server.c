@@ -145,7 +145,7 @@ void handle_client(int connfd) {
             }
             return;
         }
-        printf("Heard %d bytes.\n", command_length);
+//        printf("Heard %d bytes.\n", command_length);
         parse_command(buffer, command, parameter);
         printf("command '%s', parameter '%s'\n", command, parameter);
 
@@ -166,14 +166,17 @@ void handle_client(int connfd) {
         } else if(strcmp(command, "PASS") == 0) {
             if(flag_has_log == 1) {
                 send_command(connfd, "530 You have log in already!\r\n");
+                flag_has_username = 0;
                 goto outer_continue;
             }
             if(flag_has_username == 0) {
                 send_command(connfd, "530 You have not input username before!\r\n");
+                flag_has_username = 0;
                 goto outer_continue;
             }
             if(strlen(parameter) == 0) {
                 send_command(connfd, "530 You should input password!\r\n");
+                flag_has_username = 0;
                 goto outer_continue;
             }
             if(password_is_right(username, parameter)) {
@@ -239,6 +242,7 @@ void handle_client(int connfd) {
                 goto retr_outer_continue;
             }
             send_command(connfd, "226 Transfer successful.\r\n");
+            printf("Transfer successful.\n");
             close(transfer_fd);
 
             retr_outer_continue:
@@ -292,6 +296,7 @@ void handle_client(int connfd) {
             }
             send_command(connfd, "226 Transfer successful.\r\n");
             close(transfer_fd);
+            printf("Transfer successful.\n");
 
             stor_outer_continue:
             if(pasv_fd != 0){
@@ -437,7 +442,6 @@ void handle_client(int connfd) {
             size_t n;
             while (1){
                 n = fread(list_buffer, 1, 8190, fp);
-                printf("%s", list_buffer);
                 if(send(transfer_fd, list_buffer, n, 0) < 0) {
                     printf("Error send() in LIST\n");
                     send_command(connfd, "426 LIST send error!\r\n");

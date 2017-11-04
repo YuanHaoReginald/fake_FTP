@@ -38,7 +38,7 @@ int start_with(const char* sentence, char* word) {
 }
 
 int send_command(int connfd, char *str) {
-    printf("Sending string:`%s`\n", (str));
+//    printf("Sending string:`%s`\n", (str));
     size_t len = strlen(str);
     int total_char = 0;
     while(total_char < len) {
@@ -49,14 +49,14 @@ int send_command(int connfd, char *str) {
         }
         total_char += n;
     }
-    printf("Sent %d bytes successful!\n", total_char);
+//    printf("Sent %d bytes successful!\n", total_char);
     return total_char;
 }
 
 int recv_command(int connfd, char *buffer, size_t len) {
     int total_char = 0;
     while(total_char < len){
-        printf("Waiting for trunk\n");
+//        printf("Waiting for trunk\n");
         ssize_t n = recv(connfd, buffer + total_char, len - total_char, 0);
         if(n == -1) {
             printf("Error recv(): %s(%d)\n", strerror(errno), errno);
@@ -65,7 +65,7 @@ int recv_command(int connfd, char *buffer, size_t len) {
         } else if(n == 0) {
             break;
         }
-        printf("Received trunk of %d bytes\n", (int)n);
+//        printf("Received trunk of %d bytes\n", (int)n);
         total_char += n;
         if(*(buffer + total_char - 1) == '\n') {
             total_char --;
@@ -73,8 +73,7 @@ int recv_command(int connfd, char *buffer, size_t len) {
             break;
         }
     }
-//    printf("Received %d bytes: `%s`\n", total_char, buffer);
-    printf("%s\n", buffer);
+//    printf("%s\n", buffer);
     return total_char;
 }
 

@@ -57,7 +57,7 @@ int main() {
         char parameter[8192];
         input_with_hint("Command", command_buffer, 8191, "");
         parse_command(command_buffer, command, parameter);
-        printf("command '%s', parameter '%s'\n", command, parameter);
+//        printf("command '%s', parameter '%s'\n", command, parameter);
 
         char request[8192];
         if(strcmp(command, "exit") == 0) {
@@ -162,27 +162,16 @@ int main() {
             char list_buffer[8192];
             ssize_t n;
 
-//            while (1) {
-//                printf("1\n");
-//                n = read(transfer_fd, list_buffer, 8191);
-//                if (n == -1) {
-//                    printf("read error\n");
-//                    break;
-//                }
-//                else if (n == 0) {
-//                    printf("finish reading\r\n");
-//                    break;
-//                }
-//                fwrite(list_buffer, n, 1, stderr);
-//            }
             while (1) {
                 if((n = recv(transfer_fd, list_buffer, 8190, 0)) < 0) {
                     printf("Error recv(), in LIST\n");
                     break;
                 }
-                printf("%s", list_buffer);
-                if(n <= 0)
+                if(n <= 0){
                     break;
+                } else {
+                    printf("%s", list_buffer);
+                }
             }
 
             if(get_response(connectfd, "", response_buffer, 8191) != -1) {
@@ -277,7 +266,7 @@ int login(int connfd){
         }
 
         while(1) {
-            input_with_hint("Password, please use your e-mail",
+            input_with_hint("Password",
                             password, 8191, "");
             char command_password[8192];
             sprintf(command_password, "PASS %s\r\n", password);
