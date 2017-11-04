@@ -77,8 +77,8 @@ int main() {
             printf("\tupload <parameter>      \t--upload file.\n");
             printf("\tcd <parameter>          \t--cd a floder.\n");
             printf("\tls <parameter>[optional]\t--ls the floder.\n");
-            printf("\tmkdir <parameter>       \t--cd a floder.\n");
-            printf("\trm <parameter>          \t--cd a floder.\n");
+            printf("\tmkdir <parameter>       \t--new a floder.\n");
+            printf("\trm <parameter>          \t--remove a floder.\n");
             printf("\texit                    \t--exit the link.\n");
             continue;
         } else if (strcmp(command, "download") == 0) {
