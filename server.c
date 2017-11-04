@@ -440,12 +440,6 @@ void handle_client(int connfd) {
                 if(n <= 0)
                     break;
             }
-//            while (fgets(list_buffer, 8191, fp) != NULL) {
-//                char list_command[8192];
-//                remove_space(list_command);
-//                sprintf(list_buffer, "125 %s\r\n", list_command);
-//                send_command(connfd, list_buffer);
-//            }
             pclose(fp);
             send_command(connfd, "226 LIST success!\r\n");
             close(transfer_fd);
