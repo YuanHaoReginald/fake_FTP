@@ -216,4 +216,6 @@ int recv_file(int connfd, char* filename) {
             break;
     }
     fclose(f);
+    return 0;
 }
+
